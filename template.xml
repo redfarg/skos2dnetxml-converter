@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<RESOURCE_PROFILE>
+    <HEADER>
+        <RESOURCE_IDENTIFIER value="" />
+        <RESOURCE_TYPE value="VocabularyDSResourceType" />
+        <RESOURCE_KIND value="VocabularyDSResources" />
+        <RESOURCE_URI value="" />
+        <DATE_OF_CREATION value="" />
+    </HEADER>
+    <BODY>
+        <CONFIGURATION>
+            <VOCABULARY_NAME code=""></VOCABULARY_NAME>
+            <VOCABULARY_DESCRIPTION></VOCABULARY_DESCRIPTION>
+            <TERMS>
+            </TERMS>
+        </CONFIGURATION>
+        <STATUS>
+            <LAST_UPDATE value="" />
+        </STATUS>
+        <SECURITY_PARAMETERS />
+    </BODY>
+</RESOURCE_PROFILE>
