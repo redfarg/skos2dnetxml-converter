@@ -15,7 +15,7 @@ For installing the requirements:  `pip install -r requirements.txt`
 ```
 python skos2dnetxml-converter.py [OPTIONS] SOURCE 
 ```
-`SOURCE` must specifiy a .rdf file or a directory (for which only .rdf files will be considered). Output files are named "<Name of Concept Scheme>.xml".
+`SOURCE` must specifiy a .rdf file or a directory (for which only .rdf files will be considered). Output files are named `<NameOfConceptScheme>.xml`.
 
 **Options:**
 
