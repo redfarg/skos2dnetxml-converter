@@ -26,7 +26,7 @@ def convert(source, namespace, template, non_verbose):
         Will only try to convert files ending in .rdf. Output files are named "<Name of Concept Scheme>.xml". 
         First looks for topterms defining different vocabularies in a thesaurus (defined through skos:broaderTransitive).
         If none can be found, all unclassified terms will be combined to a single vocabulary. 
-        The template xml needs to be valid and contain all necessary nodes (VOCABULARY_NAME, DATE_OF_CREATION, LAST_UPDATE and TERMS).
+        The template xml needs to be valid and contain all necessary nodes (VOCABULARY_NAME, VOCABULARY_DESCRIPTION, DATE_OF_CREATION, LAST_UPDATE and TERMS).
     """
     if not os.path.isdir(source):
         if not os.path.isfile(source): 
@@ -58,7 +58,7 @@ def convert(source, namespace, template, non_verbose):
             for topterm in topterms:
                 if not non_verbose:
                     click.echo('Extracting terms for topterm: ' + topterm) 
-                all_terms[str(topterm)] = find_terms_for_topterm(g, topterms[topterm])
+                all_terms[str(topterm)] = find_terms_for_topterm(g, topterms[topterm][0])
         
         if not all_terms:
             all_terms[thesaurus_name] = find_all_terms_in_rdf_graph(g) # case for no existing topterms (except 'Unclassified terms')
@@ -68,7 +68,7 @@ def convert(source, namespace, template, non_verbose):
 
         try:
             for vocname in all_terms:
-                write_terms_into_xml(all_terms[vocname], template, namespace, vocname, date, non_verbose)
+                write_terms_into_xml(all_terms[vocname], template, namespace, vocname, topterms[vocname][1], date, non_verbose)
         except InvalidTemplateException as e:
             click.echo('Error parsing the template file ' + template +' : \n' + str(e)+ '\nNo file(s) created.')
 
@@ -101,18 +101,24 @@ def find_thesaurus_name_date_and_source_url(rdf_graph):
 
 
 def find_topterms(rdf_graph, source_url):
-    """ Tries to find and return all topterms in the rdf graph. """
+    """ Tries to find and return all topterms in the rdf graph, including their (english) descriptions. """
     source_url = '<' + str(source_url) + '>'
 
-    query = prepareQuery('SELECT ?label ?concept WHERE {?concept skos:topConceptOf ' + source_url + '. ?concept skos:prefLabel ?label. FILTER (LANG(?label) = "en")}',
+    query = prepareQuery('SELECT ?label ?concept ?scope_note WHERE {?concept skos:topConceptOf ' + source_url +
+                         '. ?concept skos:prefLabel ?label. OPTIONAL { ?concept skos:scopeNote ?scope_note.  ' + 
+                         ' FILTER (lang(?scope_note) = "en")} FILTER (LANG(?label) = "en")  }',
             initNs=dict(
             skos=Namespace("http://www.w3.org/2004/02/skos/core#")))
 
     qres = rdf_graph.query(query)
 
     topterms = {}
-    for topterm in qres:
-        topterms[str(topterm[0])] = topterm[1]
+    for topterm_result in qres:
+        scope_note = topterm_result[2]
+        if not scope_note:
+            scope_note = ''
+        topterms[str(topterm_result[0])] = [topterm_result[1], scope_note]
+
     return topterms
 
 
@@ -121,7 +127,8 @@ def find_terms_for_topterm(rdf_graph, topterm):
     topterm = '<' + str(topterm) + '>'
 
     query = prepareQuery(
-        'SELECT ?label WHERE { ?concept skos:prefLabel ?label. ?concept rdf:type skos:Concept. ?concept skos:broaderTransitive ' + topterm + '. FILTER (LANG(?label) = "en")}',
+        'SELECT ?label WHERE { ?concept skos:prefLabel ?label. ?concept rdf:type skos:Concept. ' + 
+        '?concept skos:broaderTransitive ' + topterm + '. FILTER (LANG(?label) = "en")}',
             initNs=dict(
             skos=Namespace("http://www.w3.org/2004/02/skos/core#")))
 
@@ -153,7 +160,7 @@ def find_all_terms_in_rdf_graph(rdf_graph):
     return terms
 
 
-def write_terms_into_xml(terms, template, namespace, vocab_name, date, non_verbose):
+def write_terms_into_xml(terms, template, namespace, vocab_name, scope_note, date, non_verbose):
     """ Writes terms and metadata of a vocab in an XML, based on the template xml. """
     try:
         tree = ET.parse(template)
@@ -166,16 +173,18 @@ def write_terms_into_xml(terms, template, namespace, vocab_name, date, non_verbo
     vocab_name = vocab_name.replace(' ', '')
 
     name_node = root.find('.//VOCABULARY_NAME')
+    desc_node = root.find('.//VOCABULARY_DESCRIPTION')
     date_node = root.find('.//DATE_OF_CREATION')
     last_update_node = root.find('.//LAST_UPDATE')
     terms_node = root.find('.//TERMS')
 
-    if not all([node != None for node in [name_node, date_node, last_update_node, terms_node]]):
+    if not all([node != None for node in [name_node, desc_node, date_node, last_update_node, terms_node]]):
         raise InvalidTemplateException("Template without one or more mandatory nodes. "
-                                       "\nMake sure VOCABULARY_NAME, DATE_OF_CREATION, LAST_UPDATE and TERMS are present.")
+                                       "\nMake sure VOCABULARY_NAME, VOCABULARY_DESCRIPTION, DATE_OF_CREATION, LAST_UPDATE and TERMS are present.")
 
     name_node.set('code', namespace + ':' + vocab_name)
     name_node.text = vocab_name
+    desc_node.text = scope_note
     date_node.set('value', date)
     last_update_node.set('value', date)
 
