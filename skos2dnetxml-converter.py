@@ -12,12 +12,12 @@ class InvalidTemplateException(Exception):
     pass
 
 DEFAULT_XML_TEMPLATE = os.path.dirname(os.path.abspath( __file__ )) + '/template.xml'
-DEFAULT_NAMESPACE = 'parthenos'
+DEFAULT_NAMESPACE = 'PARTHENOS'
 
 
 @click.command()
 @click.argument('source')
-@click.option('--namespace', default=DEFAULT_NAMESPACE, help="Defines namespace for the vocabulary files to be created (default is 'parthenos').")
+@click.option('--namespace', default=DEFAULT_NAMESPACE, help="Defines namespace for the vocabulary files to be created (default is 'PARTHENOS').")
 @click.option('--template', default=DEFAULT_XML_TEMPLATE, help='Specifies an XML file as an output template (default is template.xml in the same dir).')
 @click.option('--non-verbose', is_flag=True, help='Flag for disabling verbose console output.')
 def convert(source, namespace, template, non_verbose):
@@ -54,14 +54,15 @@ def convert(source, namespace, template, non_verbose):
         topterms = find_topterms(g, source_url)
 
         all_terms = {}
-        if not (len(topterms)==1 and 'Unclassified terms' in topterms):
-            for topterm in topterms:
-                if not non_verbose:
-                    click.echo('Extracting terms for topterm: ' + topterm) 
-                all_terms[str(topterm)] = find_terms_for_topterm(g, topterms[topterm][0])
-        
+        for topterm in topterms:
+            if not non_verbose:
+                click.echo('Extracting terms for topterm: ' + topterm) 
+            all_terms[str(topterm)] = find_terms_for_topterm(g, topterms[topterm][0])
+    
         if not all_terms:
-            all_terms[thesaurus_name] = find_all_terms_in_rdf_graph(g) # case for no existing topterms (except 'Unclassified terms')
+            if not non_verbose:
+                click.echo('No terms found in file: ' + file + '\n')
+            continue
 
         if not non_verbose:
             click.echo() 
@@ -127,36 +128,16 @@ def find_terms_for_topterm(rdf_graph, topterm):
     topterm = '<' + str(topterm) + '>'
 
     query = prepareQuery(
-        'SELECT ?label WHERE { ?concept skos:prefLabel ?label. ?concept rdf:type skos:Concept. ' + 
+        'SELECT ?label ?concept WHERE { ?concept skos:prefLabel ?label. ?concept rdf:type skos:Concept. ' + 
         '?concept skos:broaderTransitive ' + topterm + '. FILTER (LANG(?label) = "en")}',
             initNs=dict(
             skos=Namespace("http://www.w3.org/2004/02/skos/core#")))
 
     qres = rdf_graph.query(query)    
 
-    terms = []
-    for label in qres:
-        terms.append(label[0])
-    return terms
-
-
-def find_all_terms_in_rdf_graph(rdf_graph):
-    """ Tries to find all terms (of type skos:Concept) in the rdf graph.
-
-        This is called when no topterms (except 'Unclassified terms') exist, a.e. the 
-        thesaurus only contains a single vocabulary without a specified topterm.
-     """
-    qres = rdf_graph.query(
-            """SELECT ?label 
-            WHERE { ?concept skos:prefLabel ?label. 
-            ?concept rdf:type skos:Concept.
-            }""",
-            initNs=dict(skos=Namespace("http://www.w3.org/2004/02/skos/core#")))    
-
-    terms = []
-    for label in qres:
-        terms.append(label[0])
-
+    terms = {}
+    for term_res in qres:
+        terms[term_res[0]] = term_res[1]
     return terms
 
 
@@ -189,7 +170,8 @@ def write_terms_into_xml(terms, template, namespace, vocab_name, scope_note, dat
     last_update_node.set('value', date)
 
     for term in terms:
-        term_node = ET.SubElement(terms_node, 'TERM', attrib={'code':term, 'encoding':'DNET', 'english_name':term, 'native_name':term})
+        uri = namespace + '/Concept/' + terms[term].split('/Concept/')[1]
+        term_node = ET.SubElement(terms_node, 'TERM', attrib={'code':term, 'encoding':'DNET', 'english_name':uri, 'native_name':uri})
         ET.SubElement(term_node, "SYNONYMS")
         ET.SubElement(term_node, "RELATIONS")
 
