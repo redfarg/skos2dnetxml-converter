@@ -46,7 +46,7 @@ def convert(source, namespace, template, non_verbose):
             continue
 
         try:
-            date, thesaurus_name, source_url = find_thesaurus_name_date_and_source_url(g)
+            thesaurus_name, date, source_url = find_thesaurus_name_date_and_source_url(g)
         except NoSkosSchemeException:
             click.echo('\nError: No valid SKOS concept scheme found. File ' + file + ' will be skipped.\n')
             continue
@@ -97,7 +97,7 @@ def find_thesaurus_name_date_and_source_url(rdf_graph):
     date = date_components[0] + 'T' + ':'.join(date_components[1].split('-')[:3])
     source_url = res[0][2]
 
-    return date, thesaurus_name, source_url
+    return thesaurus_name, date, source_url
 
 
 def find_topterms(rdf_graph, source_url):
