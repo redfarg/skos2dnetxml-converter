@@ -171,7 +171,7 @@ def write_terms_into_xml(terms, template, namespace, vocab_name, scope_note, dat
 
     for term in terms:
         uri = namespace + '/Concept/' + terms[term].split('/Concept/')[1]
-        term_node = ET.SubElement(terms_node, 'TERM', attrib={'code':term, 'encoding':'DNET', 'english_name':uri, 'native_name':uri})
+        term_node = ET.SubElement(terms_node, 'TERM', attrib={'code':term, 'encoding':'DNET', 'english_name':term, 'native_name':uri})
         ET.SubElement(term_node, "SYNONYMS")
         ET.SubElement(term_node, "RELATIONS")
 
