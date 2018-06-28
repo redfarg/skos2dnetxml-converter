@@ -24,7 +24,7 @@ def convert(source, namespace, template, non_verbose):
     """ Converts SKOS-rdf thesaurus(es) in a file (or files in a directory) into vocabulary XML files with a DNET-required syntax, specified by a template.
 
         Will only try to convert files ending in .rdf. Output files are named "<Name of Concept Scheme>.xml". 
-        First looks for topterms defining different vocabularies in a thesaurus (defined through skos:broaderTransitive).
+        First looks for topterms defining different vocabularies in a thesaurus (defined through skos:broader).
         If none can be found, all unclassified terms will be combined to a single vocabulary. 
         The template xml needs to be valid and contain all necessary nodes (VOCABULARY_NAME, VOCABULARY_DESCRIPTION, DATE_OF_CREATION, LAST_UPDATE and TERMS).
     """
@@ -124,12 +124,12 @@ def find_topterms(rdf_graph, source_url):
 
 
 def find_terms_for_topterm(rdf_graph, topterm):
-    """ Tries to find all terms for which a given topterm is a skos:broaderTransitive. """ 
+    """ Tries to find all terms for which a given topterm is a skos:broader. """ 
     topterm = '<' + str(topterm) + '>'
 
     query = prepareQuery(
         'SELECT ?label ?concept WHERE { ?concept skos:prefLabel ?label. ?concept rdf:type skos:Concept. ' + 
-        '?concept skos:broaderTransitive ' + topterm + '. FILTER (LANG(?label) = "en")}',
+        '?concept skos:broader ' + topterm + '. FILTER (LANG(?label) = "en")}',
             initNs=dict(
             skos=Namespace("http://www.w3.org/2004/02/skos/core#")))
 
