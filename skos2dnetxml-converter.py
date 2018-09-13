@@ -83,12 +83,12 @@ def find_thesaurus_name_date_and_source_url(rdf_graph):
             """SELECT ?label ?date ?concept
             WHERE {
             ?concept skos:prefLabel ?label.
-            ?concept dc:date ?date.
+            ?concept dcterms:date ?date.
             ?concept rdf:type skos:ConceptScheme.
             }""",
             initNs=dict(
             skos=Namespace("http://www.w3.org/2004/02/skos/core#"),
-            dc=Namespace("http://purl.org/dc/elements/1.1/"))
+            dcterms=Namespace("http://purl.org/dc/terms/"))
             )    
     res = list(qres)
     if len(res) < 1:
